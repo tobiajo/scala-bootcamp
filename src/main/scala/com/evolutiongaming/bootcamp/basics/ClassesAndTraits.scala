@@ -71,12 +71,12 @@ object ClassesAndTraits {
   }
 
   final case class Circle(centerX: Double, centerY: Double, radius: Double) extends Shape {
-    override def x: Double    = ???
-    override def y: Double    = ???
-    override def minX: Double = ???
-    override def maxX: Double = ???
-    override def minY: Double = ???
-    override def maxY: Double = ???
+    override def x: Double    = centerX
+    override def y: Double    = centerY
+    override def minX: Double = centerX - radius
+    override def maxX: Double = centerX + radius
+    override def minY: Double = centerY - radius
+    override def maxY: Double = centerY + radius
   }
 
   // Case Classes
@@ -115,9 +115,9 @@ object ClassesAndTraits {
     new Bounded {
       // if needed, fix the code to be correct
       override def minX: Double = objects.map(_.minX).min
-      override def maxX: Double = objects.map(_.minX).min
-      override def minY: Double = objects.map(_.minX).min
-      override def maxY: Double = objects.map(_.minX).min
+      override def maxX: Double = objects.map(_.maxX).max
+      override def minY: Double = objects.map(_.minY).min
+      override def maxY: Double = objects.map(_.maxY).max
     }
 
   // Singleton can extend classes and mix in traits

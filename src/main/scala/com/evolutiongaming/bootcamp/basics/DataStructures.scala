@@ -1,5 +1,6 @@
 package com.evolutiongaming.bootcamp.basics
 
+import scala.collection.immutable.TreeMap
 import scala.util.Try
 
 object DataStructures {
@@ -81,7 +82,7 @@ object DataStructures {
   // Exercise. Write a function that checks if all values in a `List` are equal.
   // Think about what you think your function should return if `list` is empty, and why.
   def allEqual[T](list: List[T]): Boolean = {
-    false // TODO: implement
+    Set(list: _*).size == 1
   }
 
   // Maps
@@ -122,17 +123,22 @@ object DataStructures {
   // Exercise. Calculate the total cost of all vegetables, taking vegetable amounts (in units) from
   // `vegetableAmounts` and prices per unit from `vegetablePrices`. Assume the price is 10 if not available
   // in `vegetablePrices`.
-  val totalVegetableCost: Int = {
-    17 // implement here
-  }
+  val totalVegetableCost: Int =
+    vegetableAmounts.foldLeft(0) { (acc, amount) =>
+      acc + vegetablePrices.getOrElse(amount._1, 10) * amount._2
+    }
 
   // Exercise. Given the vegetable weights (per 1 unit of vegetable) in `vegetableWeights` and vegetable
   // amounts (in units) in `vegetableAmounts`, calculate the total weight per type of vegetable, if known.
   //
   // For example, the total weight of "olives" is 2 * 32 == 64.
-  val totalVegetableWeights: Map[String, Int] = { // implement here
-    Map()
-  }
+  val totalVegetableWeights: Map[String, Int] =
+    vegetableAmounts.foldLeft(Map.empty[String, Int]) { (acc, amount) =>
+      vegetableWeights.get(amount._1) match {
+        case Some(weight) => acc.updated(amount._1, weight * amount._2)
+        case None => acc
+      }
+    }
 
   // Ranges and Sequences
   val inclusiveRange: Seq[Int] = 2 to 4    // 2, 3, 4, or <=
@@ -192,9 +198,10 @@ object DataStructures {
   //   - For other `n`, for each `set` element `elem`, generate all subsets of size `n - 1` from the set
   //     that don't include `elem`, and add `elem` to them.
   def allSubsetsOfSizeN[A](set: Set[A], n: Int): Set[Set[A]] = {
-    // replace with correct implementation
-    println(n)
-    Set(set)
+    if (n == 1) set.map(Set(_))
+    else set.foldLeft(Set.empty[Set[A]]) { (acc, elem) =>
+      acc ++ allSubsetsOfSizeN(set - elem, n - 1).map(_ + elem)
+    }
   }
 
   // Homework
@@ -214,5 +221,16 @@ object DataStructures {
   //
   // Input `Map("a" -> 1, "b" -> 2, "c" -> 4, "d" -> 1, "e" -> 0, "f" -> 2, "g" -> 2)` should result in
   // output `List(Set("e") -> 0, Set("a", "d") -> 1, Set("b", "f", "g") -> 2, Set("c") -> 4)`.
-  def sortConsideringEqualValues[T](map: Map[T, Int]): List[(Set[T], Int)] = ???
+  def sortConsideringEqualValues[T](map: Map[T, Int]): List[(Set[T], Int)] = {
+    val sortedMap = map.foldLeft(TreeMap.empty[Int, Set[T]]) { (acc, t) =>
+      val (e, value) = t
+      val es = acc.getOrElse(value, Set.empty).incl(e)
+      acc.updated(value, es)
+    }
+
+    sortedMap.foldRight(List.empty[(Set[T], Int)]) { (t, acc) =>
+      val (value, es) = t
+      acc.prepended((es, value))
+    }
+  }
 }

@@ -32,7 +32,12 @@ object ControlStructures {
   // Exercise. Implement a "Fizz-Buzz" https://en.wikipedia.org/wiki/Fizz_buzz function using the if-else,
   // returning "fizzbuzz" for numbers which divide with 15, "fizz" for those which divide by 3 and "buzz" for
   // those which divide with 5, and returning the input number as a string for other numbers:
-  def fizzBuzz1(n: Int): String = ???
+  def fizzBuzz1(n: Int): String = {
+    if (n % 15 == 0) "fizzbuzz"
+    else if (n % 3 == 0) "fizz"
+    else if (n % 5 == 0) "buzz"
+    else n.toString
+  }
 
   // Pattern Matching
   //
@@ -105,7 +110,12 @@ object ControlStructures {
   }
 
   // Exercise. Implement a "Fizz-Buzz" function using pattern matching:
-  def fizzBuzz2(n: Int): String = ???
+  def fizzBuzz2(n: Int): String = (n % 3, n % 5) match {
+    case (0, 0) => "fizzbuzz"
+    case (0, _) => "fizz"
+    case (_, 0) => "buzz"
+    case _ => n.toString
+  }
 
   // Recursion
   //
@@ -149,14 +159,18 @@ object ControlStructures {
   //
   // Thus `applyNTimesForInts(_ + 1, 4)(3)` should return `((((3 + 1) + 1) + 1) + 1)` or `7`.
   def applyNTimesForInts(f: Int => Int, n: Int): Int => Int = { x: Int =>
-    f(x + n) // replace with a correct implementation
+    n match {
+      case 0 => x
+      case _ if n > 0 => f(applyNTimesForInts(f, n - 1)(x))
+    }
   }
 
   // Exercise: Convert the function `applyNTimesForInts` into a polymorphic function `applyNTimes`:
   def applyNTimes[A](f: A => A, n: Int): A => A = { x: A =>
-    // replace with correct implementation
-    println(n)
-    f(x)
+    n match {
+      case 0 => x
+      case _ if n > 0 => f(applyNTimes(f, n - 1)(x))
+    }
   }
 
   // `map`, `flatMap` and `filter` are not control structures, but methods that various collections (and
@@ -275,7 +289,17 @@ object ControlStructures {
     // amount, respectively):
     println(s"$service, $fromUserWithName, $toUserWithName, $amount")
     import service._
-    ???
+    for {
+      _ <- validateUserName(fromUserWithName)
+      _ <- validateUserName(toUserWithName)
+      from <- findUserId(fromUserWithName)
+      to <- findUserId(toUserWithName)
+      _ <- validateAmount(amount)
+      fromBefore <- findBalance(from)
+      toBefore <- findBalance(to)
+      fromAfter <- updateAccount(from, fromBefore, 0 - amount)
+      toAfter <- updateAccount(to, toBefore, 0 + amount)
+    } yield (fromAfter, toAfter)
   }
 
   // Question. What are the questions would you ask - especially about requirements - before implementing
@@ -295,7 +319,11 @@ object ControlStructures {
   //
   // Use a "for comprehension" in your solution.
 
-  val AProductB: Set[(Int, Boolean)] = Set()
+  val AProductB: Set[(Int, Boolean)] =
+    for {
+      a <- Set(0, 1, 2)
+      b <- Set(true, false)
+    } yield (a, b)
 
   // Exercise:
   //
@@ -307,7 +335,11 @@ object ControlStructures {
   //
   // Use "map" and `++` (`Set` union operation) in your solution.
 
-  val ASumB: Set[Either[Int, Boolean]] = Set()
+  val ASumB: Set[Either[Int, Boolean]] = {
+    val a = Set(0, 1, 2)
+    val b = Set(true, false)
+    a.map(Left(_)) ++ b.map(Right(_))
+  }
 
   // Scala inherits the standard try-catch-finally construct from Java:
   def printFile(fileName: String): Unit = {

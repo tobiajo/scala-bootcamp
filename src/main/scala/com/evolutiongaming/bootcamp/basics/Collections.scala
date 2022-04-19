@@ -1,5 +1,7 @@
 package com.evolutiongaming.bootcamp.basics
 
+import scala.annotation.tailrec
+
 object Mutability {
   import scala.collection.mutable
 
@@ -158,8 +160,12 @@ object LinkedList extends App {
         None for List(1, 2, 3, 4)
         Some((2, 8)) for List(1, 2, 8)
    */
-  def findGap(l: List[Int]): Option[(Int, Int)] = {
-    ???
+  @tailrec
+  def findGap(l: List[Int]): Option[(Int, Int)] = l match {
+    case first :: second :: remaining =>
+      if (second - first > 1) Some((first, second))
+      else findGap(remaining)
+    case _ => None
   }
 
   // recursion
@@ -177,20 +183,29 @@ object LinkedList extends App {
   list.reduceRight(_ + _)
 
   // try to implement min different ways (fold, reduce, recursion)
-  def min(list: List[Int]): Option[Int] = {
-    ???
-  }
+  def min(list: List[Int]): Option[Int] =
+    list.foldLeft(None: Option[Int]) { (acc, elem) =>
+      acc match {
+        case Some(min) if min < elem => Some(min)
+        case _ => Some(elem)
+      }
+    }
 
   // Implement scanLeft (not using scans ofc)
-  def scanLeft[T](zero: T)(list: List[T])(f: (T, T) => T): List[T] = {
-    ???
-  }
+  def scanLeft[T](zero: T)(list: List[T])(f: (T, T) => T): List[T] =
+    list.foldLeft(List(zero)) { (acc, elem) =>
+      acc.appended(f(acc.last, elem))
+    }
 
   // https://twitter.com/allenholub/status/1357115515672555520/photo/1
   // pass the interview
-  def count(s: String): List[(Char, Int)] = {
-    ???
-  }
+  def count(s: String): List[(Char, Int)] =
+    s.foldRight(List.empty[(Char, Int)]) { (char, acc) =>
+      acc match {
+        case head :: tail if head._1 == char => tail.prepended((char, head._2 + 1))
+        case _ => acc.prepended((char, 1))
+      }
+    }
 
   /*
     Additional information:
