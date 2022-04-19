@@ -34,13 +34,13 @@ object Functions {
   def processText2(message: String, f: String => String): String = f(message)
 
   // Exercise. Implement `isEven` method that checks if a number is even.
-  def isEven(n: Int): Boolean = ???
+  def isEven(n: Int): Boolean = n % 2 == 0
 
   // Exercise. Implement `isEvenFunc` function that behaves exactly like `isEven` method.
-  val isEvenFunc: Int => Boolean = n => ???
+  val isEvenFunc: Int => Boolean = n => n % 2 == 0
 
   // Exercise. Implement `isEvenMethodToFunc` function by transforming `isEven` method into a function.
-  val isEvenMethodToFunc: Int => Boolean = n => ???
+  val isEvenMethodToFunc: Int => Boolean = n => isEven(n)
 
   // There are traits in Scala to represent functions with various numbers of arguments: `Function0`,
   // `Function1`, `Function2`, etc. So `(A => B)` is the same as `Function1[A, B]`. A trait, where
@@ -78,7 +78,10 @@ object Functions {
   // Polymorphic functions have at least one type parameter.
 
   // Exercise. Implement `mapOption` function without calling `Option` APIs.
-  def mapOption[A, B](option: Option[A], f: A => B): Option[B] = ???
+  def mapOption[A, B](option: Option[A], f: A => B): Option[B] = option match {
+    case Some(value) => Some(f(value))
+    case None => None
+  }
 
   // FUNCTION COMPOSITION
 

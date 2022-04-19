@@ -11,7 +11,7 @@ object FunctionsDescoped {
   def idPure(/* ??? */): (Int, Int) = ???
 
   // Implement `identity` which returns its input unchanged. Do not use scala.Predef.identity
-  def identity[A](x: A): A = ???
+  def identity[A](x: A): A = x
 
   // Question. What do you expect?
 
@@ -85,11 +85,11 @@ object FunctionsDescoped {
   // JSON is a recursive data structure
   sealed trait Json
 
-  case class JObject(/* ??? */) extends Json
+  case class JObject(value: (JString, Json)*) extends Json
 
-  case class JArray(/* ??? */) extends Json
+  case class JArray(value: Json*) extends Json
 
-  case class JString(/* ??? */) extends Json
+  case class JString(value: String) extends Json
 
   case class JNumber(value: BigDecimal) extends Json
 
@@ -102,20 +102,45 @@ object FunctionsDescoped {
 
 
   // Task 1. Represent `rawJson` string via defined classes
-  val data: Json = JObject(/* ??? */)
+  val data: Json = JObject(
+    JString("username") -> JString("John"),
+    JString("address") -> JObject(
+      JString("country") -> JString("UK"),
+      JString("postalCode") -> JNumber(45765)
+    ),
+    JString("eBooks") -> JArray(
+      JString("Scala"),
+      JString("Dotty")
+    )
+  )
 
   // Task 2. Implement a function `asString` to print given Json data as a json string
 
-  def asString(data: Json): String = ???
+  def asString(data: Json): String = data match {
+    case JObject(value@_*) => s"{${value.map(kv => asString(kv._1) + ":" + asString(kv._2)).mkString(",")}}"
+    case JArray(value@_*) => s"[${value.map(asString).mkString(",")}]"
+    case JString(value) => s"\"${value}\""
+    case JNumber(value) => s"${value}"
+    case JBoolean(value) => s"${value}"
+  }
 
   // Task 3. Implement a function that validate our data whether it contains JNumber with negative value or not
 
-  def isContainsNegative(data: Json): Boolean = ???
+  def isContainsNegative(data: Json): Boolean = data match {
+    case JObject(value@_*) => value.map(_._2).exists(isContainsNegative)
+    case JArray(value@_*) => value.exists(isContainsNegative)
+    case JNumber(value) => value < 0
+    case _ => false
+  }
 
   // Task 4. Implement a function that return the nesting level of json objects.
   // Note. top level json has level 1, we can go from top level to bottom only via objects
 
-  def nestingLevel(data: Json): Int = ???
+  def nestingLevel(data: Json): Int = data match {
+    case JObject(value@_*) => 1 + value.map(_._2).map(nestingLevel).max
+    case JArray(value@_*) => 1 + value.map(nestingLevel).max
+    case _ => 0
+  }
 
   // See FunctionsSpec for expected results
 
