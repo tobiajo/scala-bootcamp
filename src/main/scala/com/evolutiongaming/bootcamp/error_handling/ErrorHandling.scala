@@ -55,7 +55,10 @@ object ErrorHandling extends App {
   // can go wrong or there is no interest in a particular reason for a failure.
 
   // Exercise. Implement `parseIntOption` method.
-  def parseIntOption(string: String): Option[Int] = ???
+  def parseIntOption(string: String): Option[Int] =
+    try Some(parseInt(string)) catch {
+      case NonFatal(_) => None
+    }
 
   // The downside of Option is that it does not encode any information about what exactly went wrong. It only
   // states the mere fact that it did.
@@ -69,7 +72,10 @@ object ErrorHandling extends App {
 
   // Exercise. Implement `parseIntEither` method, returning the parsed integer as `Right` upon success and
   // "{{string}} does not contain an integer" as `Left` upon failure.
-  def parseIntEither(string: String): Either[String, Int] = ???
+  def parseIntEither(string: String): Either[String, Int] =
+    try Right(parseInt(string)) catch {
+      case NonFatal(_) => Left(s"${string} does not contain an integer")
+    }
 
   // As an alternative to `String`, a proper ADT can be introduced to formalize all error cases. As discussed
   // in `AlgebraicDataTypes` section, this provides a number of benefits, including an exhaustiveness check
@@ -89,7 +95,14 @@ object ErrorHandling extends App {
   }
   // Exercise. Implement `credit` method, returning `Unit` as `Right` upon success and the appropriate
   // `TransferError` as `Left` upon failure.
-  def credit(amount: BigDecimal): Either[TransferError, Unit] = ???
+  def credit(amount: BigDecimal): Either[TransferError, Unit] = {
+    import TransferError._
+    if (amount < 0) Left(NegativeAmount)
+    else if (amount == 0) Left(ZeroAmount)
+    else if (amount >= 1000000) Left(AmountIsTooLarge)
+    else if (amount.scale > 2) Left(TooManyDecimals)
+    else Right()
+  }
 
   // `Either[Throwable, A]` is similar to `Try[A]`. However, because `Try[A]` has its error channel hardcoded
   // to a specific type and `Either[L, R]` does not, `Try[A]` provides more specific methods to deal with
@@ -165,7 +178,11 @@ object ErrorHandling extends App {
     // Exercise. Implement `validateAge` method, so that it returns `AgeIsNotNumeric` if the age string is not
     // a number and `AgeIsOutOfBounds` if the age is not between 18 and 75. Otherwise the age should be
     // considered valid and returned inside `AllErrorsOr`.
-    private def validateAge(age: String): AllErrorsOr[Age] = ???
+    private def validateAge(age: String): AllErrorsOr[Age] = parseIntOption(age) match {
+      case None => AgeIsNotNumeric.invalidNec
+      case Some(value) if value < 18 || value > 75 => AgeIsOutOfBounds.invalidNec
+      case Some(value) => Age(value).validNec
+    }
 
     // `validate` method takes raw username and age values (for example, as received via POST request),
     // validates them, transforms as needed and returns `AllErrorsOr[Student]` as a result. `mapN` method
