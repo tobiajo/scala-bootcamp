@@ -116,11 +116,15 @@ object Implicits {
 
     object Implicits {
       //put your implicit class or implicit conversion function here
+      implicit class RichInstant(inner: Instant) {
+        def isBce: Boolean = inner.isBefore(CommonEraStart)
+      }
     }
 
     object Workspace {
       //use isBce extension method to implement this one
-      def isCe(instant: Instant): Boolean = ???
+      import Implicits._
+      def isCe(instant: Instant): Boolean = !instant.isBce
     }
   }
 
@@ -247,7 +251,9 @@ object Implicits {
    */
   object Exercise2 {
     //change the method signature accordingly
-    def reverseShow(value: Any): String = ???
+    import MoreImplicitParameters.Show
+    import MoreImplicitParameters.syntax.ShowOps
+    def reverseShow[T: Show](value: T): String = value.show.reverse
   }
 
   /*
@@ -272,7 +278,12 @@ object Implicits {
 
     change the signature accordingly, add implicit instances if needed
      */
-    def secondBiggestValue[T](values: Seq[T]): Option[T] = ???
+    implicit val HDEYearsOrdering: Ordering[HDEYears] = (x, y) => x.value.compare(y.value)
+
+    def secondBiggestValue[T: Ordering](values: Seq[T]): Option[T] = {
+      if (values.length < 2) None
+      else Some(values.sorted.apply(1))
+    }
 
 
     /**
@@ -288,7 +299,25 @@ object Implicits {
 
     change the signature accordingly, add implicit instances if needed
      */
-    def average[T](values: Seq[T]): Option[T] = ???
+    implicit val customNumberFractional: Fractional[CustomNumber] = new Fractional[CustomNumber] {
+      override def div(x: CustomNumber, y: CustomNumber): CustomNumber = CustomNumber(x.value / y.value)
+      override def plus(x: CustomNumber, y: CustomNumber): CustomNumber = CustomNumber(x.value + y.value)
+      override def minus(x: CustomNumber, y: CustomNumber): CustomNumber = ???
+      override def times(x: CustomNumber, y: CustomNumber): CustomNumber = ???
+      override def negate(x: CustomNumber): CustomNumber = ???
+      override def fromInt(x: Int): CustomNumber = CustomNumber(x.toFloat)
+      override def parseString(str: String): Option[CustomNumber] = ???
+      override def toInt(x: CustomNumber): Int = ???
+      override def toLong(x: CustomNumber): Long = ???
+      override def toFloat(x: CustomNumber): Float = ???
+      override def toDouble(x: CustomNumber): Double = ???
+      override def compare(x: CustomNumber, y: CustomNumber): Int = ???
+    }
+
+    def average[T](values: Seq[T])(implicit fractional: Fractional[T]): Option[T] = {
+      if (values.isEmpty) None
+      else Some(fractional.div(values.sum, fractional.fromInt(values.length)))
+    }
   }
 
   /*

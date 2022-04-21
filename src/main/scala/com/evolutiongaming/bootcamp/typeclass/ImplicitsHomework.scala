@@ -34,7 +34,16 @@ object ImplicitsHomework {
 
     object syntax {
       implicit class GetSizeScoreOps[T: GetSizeScore](inner: T) {
-        def sizeScore: SizeScore = ??? //implement the syntax!
+        def sizeScore: SizeScore = implicitly[GetSizeScore[T]].apply(inner)
+      }
+
+      implicit class IterateOps[F[_]: Iterate, T](inner: F[T]) {
+        def iterator: Iterator[T] = implicitly[Iterate[F]].iterator(inner)
+      }
+
+      implicit class Iterate2Ops[F[_, _]: Iterate2, T, S](inner: F[T, S]) {
+        def iterator1: Iterator[T] = implicitly[Iterate2[F]].iterator1(inner)
+        def iterator2: Iterator[S] = implicitly[Iterate2[F]].iterator2(inner)
       }
     }
 
@@ -59,9 +68,16 @@ object ImplicitsHomework {
        */
       private val map = mutable.LinkedHashMap.empty[K, V]
 
-      def put(key: K, value: V): Unit = ???
+      def put(key: K, value: V): Unit = {
+        map.put(key, value)
+        while (sizeScore > maxSizeScore) map.subtractOne(map.keys.head)
+      }
 
-      def get(key: K): Option[V] = ???
+      def get(key: K): Option[V] = {
+        map.get(key)
+      }
+
+      private def sizeScore: SizeScore = map.map(kv => kv._1.sizeScore + kv._2.sizeScore).sum
     }
 
     /**
@@ -100,6 +116,15 @@ object ImplicitsHomework {
       }
       //Provide Iterate2 instances for Map and PackedMultiMap!
       //if the code doesn't compile while you think it should - sometimes full rebuild helps!
+      implicit val mapIterate2: Iterate2[Map] = new Iterate2[Map] {
+        override def iterator1[T, S](f: Map[T, S]): Iterator[T] = f.iterator.map(_._1)
+        override def iterator2[T, S](f: Map[T, S]): Iterator[S] = f.iterator.map(_._2)
+      }
+
+      implicit val packedMultiMapIterate2: Iterate2[PackedMultiMap] = new Iterate2[PackedMultiMap] {
+        override def iterator1[T, S](f: PackedMultiMap[T, S]): Iterator[T] = f.inner.iterator.map(_._1)
+        override def iterator2[T, S](f: PackedMultiMap[T, S]): Iterator[S] = f.inner.iterator.map(_._2)
+      }
 
       /*
       replace this big guy with proper implicit instances for types:
@@ -112,7 +137,21 @@ object ImplicitsHomework {
       If you struggle with writing generic instances for Iterate and Iterate2, start by writing instances for
       List and other collections and then replace those with generic instances.
        */
-      implicit def stubGetSizeScore[T]: GetSizeScore[T] = (_: T) => 42
+      implicit def byteGetSizeScore: GetSizeScore[Byte] = _ => 1
+      implicit def intGetSizeScore: GetSizeScore[Int] = _ => 4
+      implicit def longGetSizeScore: GetSizeScore[Long] = _ => 8
+      implicit def charGetSizeScore: GetSizeScore[Char] = _ => 2
+
+      implicit def stringGetSizeScore: GetSizeScore[String] =
+        s => 12 + sum(s.iterator)
+
+      implicit def iterateGetSizeScore[F[_]: Iterate, T: GetSizeScore]: GetSizeScore[F[T]] =
+        f => 12 + sum(f.iterator)
+
+      implicit def iterate2GetSizeScore[F[_, _]: Iterate2, T: GetSizeScore, S: GetSizeScore]: GetSizeScore[F[T, S]] =
+        f => 12 + sum(f.iterator1) + sum(f.iterator2)
+
+      private def sum[T: GetSizeScore](iterator: Iterator[T]): SizeScore = iterator.map(_.sizeScore).sum
     }
   }
 
@@ -145,6 +184,38 @@ object ImplicitsHomework {
     /*
     Return an implementation based on MutableBoundedCache[Long, Twit]
      */
-    def createTwitCache(maxSizeScore: SizeScore): TwitCache = ???
+    def createTwitCache(maxSizeScore: SizeScore): TwitCache = new TwitCache {
+
+      private val cache = initialize
+
+      override def put(twit: Twit): Unit = {
+        cache.put(twit.id, twit)
+      }
+
+      override def get(id: Long): Option[Twit] = {
+        cache.get(id)
+      }
+
+      private def initialize: MutableBoundedCache[Long, Twit] = {
+        import instances._
+        import syntax._
+
+        implicit def twitGetSizeScore: GetSizeScore[Twit] =
+          twit => 12 +
+            twit.id.sizeScore +
+            twit.userId.sizeScore +
+            twit.hashTags.sizeScore +
+            twit.attributes.sizeScore +
+            twit.fbiNotes.sizeScore
+
+        implicit def fbiNoteGetSizeScore: GetSizeScore[FbiNote] =
+          fbiNote => 12 +
+            fbiNote.month.sizeScore +
+            fbiNote.favouriteChar.sizeScore +
+            fbiNote.watchedPewDiePieTimes.sizeScore
+
+        new MutableBoundedCache[Long, Twit](maxSizeScore)
+      }
+    }
   }
 }
