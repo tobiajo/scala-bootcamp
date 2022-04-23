@@ -85,7 +85,7 @@ object FunctionsDescoped {
   // JSON is a recursive data structure
   sealed trait Json
 
-  case class JObject(value: (JString, Json)*) extends Json
+  case class JObject(value: (String, Json)*) extends Json
 
   case class JArray(value: Json*) extends Json
 
@@ -103,12 +103,12 @@ object FunctionsDescoped {
 
   // Task 1. Represent `rawJson` string via defined classes
   val data: Json = JObject(
-    JString("username") -> JString("John"),
-    JString("address") -> JObject(
-      JString("country") -> JString("UK"),
-      JString("postalCode") -> JNumber(45765)
+    "username" -> JString("John"),
+    "address" -> JObject(
+      "country" -> JString("UK"),
+      "postalCode" -> JNumber(45765)
     ),
-    JString("eBooks") -> JArray(
+    "eBooks" -> JArray(
       JString("Scala"),
       JString("Dotty")
     )
@@ -117,7 +117,7 @@ object FunctionsDescoped {
   // Task 2. Implement a function `asString` to print given Json data as a json string
 
   def asString(data: Json): String = data match {
-    case JObject(value@_*) => s"{${value.map(kv => asString(kv._1) + ":" + asString(kv._2)).mkString(",")}}"
+    case JObject(value@_*) => s"{${value.map(kv => s"\"${kv._1}\":${asString(kv._2)}").mkString(",")}}"
     case JArray(value@_*) => s"[${value.map(asString).mkString(",")}]"
     case JString(value) => s"\"${value}\""
     case JNumber(value) => s"${value}"
