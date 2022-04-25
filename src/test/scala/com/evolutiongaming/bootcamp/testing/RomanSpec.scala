@@ -7,11 +7,13 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalacheck.Test.Parameters
 
 class RomanSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with Matchers {
+  import Roman._
+
   implicit val params = Parameters.default.withMinSuccessfulTests(1000)
 
   "decimal" should "invert roman" in {
-    forAll(Gen.choose(1, 1000000)) { _ =>
-
+    forAll(Gen.choose(1, 1000000)) { n =>
+      decimal(roman(n)) shouldEqual Some(n)
     }
   }
 }
