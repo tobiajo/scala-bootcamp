@@ -8,7 +8,10 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.string._
+import org.mockito.MockitoSugar
 import org.scalatest.funsuite.AnyFunSuite
+
+import java.util.concurrent.atomic.AtomicReference
 
 // *Introduction*
 //
@@ -37,9 +40,9 @@ object PowerfulScala {
   //
   // sbt:scala-bootcamp> testOnly *testing2.PowerfulScalaSpec
   //
-  def energy(mass: String): String = {
+  def energy(mass: BigDecimal): String = {
     val speedOfLight = BigDecimal(299792458)
-    val energy = BigDecimal(mass) * speedOfLight.pow(2)
+    val energy = mass * speedOfLight.pow(2)
     energy.toString
   }
 
@@ -47,7 +50,7 @@ object PowerfulScala {
 class PowerfulScalaSpec extends AnyFunSuite {
 
   test("we get a correct result") {
-    assert(PowerfulScala.energy("100") == "8987551787368176400")
+    assert(PowerfulScala.energy(100) == "8987551787368176400")
   }
   test("wrong call does not compile") {
     assertTypeError("""PowerfulScala.energy("wrong stuff")""")
@@ -96,7 +99,10 @@ object RefinedScala {
   //
   // sbt:scala-bootcamp> testOnly *testing2.RefinedScalaSpec
   //
-  case class Document(url: String, body: String)
+  case class Document(
+    url: String Refined Url,
+    body: String Refined Xml
+  )
 
 }
 class RefinedScalaSpec extends AnyFunSuite {
@@ -293,20 +299,49 @@ object EffectTracking {
   }
 
 }
-object EffectTrackingSpec extends AnyFunSuite {
+class EffectTrackingSpec extends AnyFunSuite with MockitoSugar {
+
+  import EffectTracking._
 
   // Implement the tests validating `Service` functionality.
   //
   // Run the tests like following:
   //
-  // sbt:scala-bootcamp> testOnly *testing2.ParametricitySpec
+  // sbt:scala-bootcamp> testOnly *testing2.EffectTrackingSpec
   //
   // Bonus task: implement them using `State` monad mentioned in `UnitTesting` section.
-  test("Service.call prints out correct message after a second") {
-    ???
+  class Fixture {
+    val printingMock = mock[Printing]
+    val clockMock = mock[Clock]
+    val variable = new Variable {
+      val inner = new AtomicReference[Option[Long]](None)
+      def set(x: Long) = inner.set(Some(x))
+      def get() = inner.get()
+    }
   }
+
+  test("Service.call prints out correct message after a second") {
+    val f = new Fixture
+    val service = new Service(f.printingMock, f.clockMock, f.variable)
+
+    when(f.clockMock.currentTimeMillis()).thenReturn(0)
+    service.call
+    when(f.clockMock.currentTimeMillis()).thenReturn(1001)
+    service.call
+
+    verify(f.printingMock, times(1)).print("A second passed since first call!")
+  }
+
   test("Service.call does not print a message before a second passes") {
-    ???
+    val f = new Fixture
+    val service = new Service(f.printingMock, f.clockMock, f.variable)
+
+    when(f.clockMock.currentTimeMillis()).thenReturn(0)
+    service.call
+    when(f.clockMock.currentTimeMillis()).thenReturn(1000)
+    service.call
+
+    verify(f.printingMock, times(0)).print("A second passed since first call!")
   }
 
 }
