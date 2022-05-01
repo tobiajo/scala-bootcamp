@@ -14,20 +14,20 @@ object p1_Semigroup {
     * */
   val stringSemigroup: Semigroup[String] = new Semigroup[String] {
     override def combine(x: String, y: String): String =
-      ??? /* your code here */
+      x + y
   }
 
   /**
     * Ex 1.1 implement a semigroup with `sum` as an operation.
     * Q: Can you pick another operation that forms a semigroup for ints?
     * */
-  val intSemigroup: Semigroup[Int] = (a, b) => ??? /* your code here */
+  val intSemigroup: Semigroup[Int] = (a, b) => a + b
 
   /**
     * Ex 1.2
     * */
   def listSemigroup[A]: Semigroup[List[A]] =
-    (a, b) => ??? /* your code here */
+    (a, b) => a ++ b
 
   // Cats has instances for a variety of types. They may be found in cats.instances package:
   import cats.instances.int._

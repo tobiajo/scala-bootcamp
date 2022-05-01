@@ -12,18 +12,18 @@ object p2_Monoid {
     * Q: Can division be picked as an associative binary operation?
    **/
   val intMonoid: Monoid[Int] = new Monoid[Int] {
-    override def empty: Int = ???
+    override def empty: Int = 1
 
-    override def combine(x: Int, y: Int): Int = ???
+    override def combine(x: Int, y: Int): Int = x * y
   }
 
   /**
     * Ex 2.1 use string concatenation as an operation
    **/
   val stringMonoid: Monoid[String] = new Monoid[String] {
-    override def empty: String = ???
+    override def empty: String = ""
 
-    override def combine(x: String, y: String): String = ???
+    override def combine(x: String, y: String): String = x + y
   }
 
   /**
@@ -34,9 +34,9 @@ object p2_Monoid {
    **/
 
   val boolMonoid: Monoid[Boolean] = new Monoid[Boolean] {
-    override def empty: Boolean = ???
+    override def empty: Boolean = true
 
-    override def combine(x: Boolean, y: Boolean): Boolean = ???
+    override def combine(x: Boolean, y: Boolean): Boolean = x && y
   }
 
   // as you might already guessed, there are plenty of instances already defined in cats library:

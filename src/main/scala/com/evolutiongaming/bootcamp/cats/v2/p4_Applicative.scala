@@ -16,6 +16,6 @@ object p4_Applicative {
     * Ex 4.0 implement an EvoApplicative for Option
     * */
   val optionApplicative: EvoApplicative[Option] = new EvoApplicative[Option] {
-    override def pure[A](x: A): Option[A] = ???
+    override def pure[A](x: A): Option[A] = Some(x)
   }
 }

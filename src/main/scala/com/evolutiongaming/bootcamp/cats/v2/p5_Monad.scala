@@ -1,6 +1,8 @@
 package com.evolutiongaming.bootcamp.cats.v2
 
 import cats.effect.ExitCode
+
+import scala.collection.mutable.ListBuffer
 object p5_Monad {
 
   /**
@@ -23,7 +25,7 @@ object p5_Monad {
     /**
       * Ex 5.0 implement map in terms of pure and flatMap.
       * */
-    def map[A, B](fa: F[A])(f: A => B): F[B] = ??? /* your code here */
+    def map[A, B](fa: F[A])(f: A => B): F[B] = flatMap(fa)(a => pure(f(a)))
   }
 
   /**
@@ -62,17 +64,21 @@ object p5_Monad {
   val listM: EvoMonad[List] = new EvoMonad[List] {
     override def pure[A](a: A): List[A] = List(a)
 
-    override def flatMap[A, B](fa: List[A])(f: A => List[B]): List[B] =
-      ???
+    override def flatMap[A, B](fa: List[A])(f: A => List[B]): List[B] = fa match {
+      case Nil => Nil
+      case ::(a, next) => f(a) ::: flatMap(next)(f)
+    }
   }
   /**
     * Ex 5.2 implement EvoMonad for Option
     * */
   val optionM: EvoMonad[Option] = new EvoMonad[Option] {
-    override def pure[A](a: A): Option[A] = ???
+    override def pure[A](a: A): Option[A] = Some(a)
 
-    override def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] =
-      ???
+    override def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] = fa match {
+      case None => None
+      case Some(a) => f(a)
+    }
   }
 
 

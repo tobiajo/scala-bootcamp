@@ -16,16 +16,20 @@ object p3_Functor {
     * Ex 3.0 implement functor for List (do not use fa.map(f))
     * */
   val listFunctor: Functor[List] = new Functor[List] {
-    override def map[A, B](fa: List[A])(f: A => B): List[B] =
-      ??? /* your code here */
+    override def map[A, B](fa: List[A])(f: A => B): List[B] = fa match {
+      case Nil => Nil
+      case ::(a, next) => f(a) :: map(next)(f)
+    }
   }
 
   /**
     * Ex 3.1 how about Functor for Option, (don not use fa.map(f))
     */
   val optFunctor: Functor[Option] = new Functor[Option] {
-    override def map[A, B](fa: Option[A])(f: A => B): Option[B] =
-      ??? /* your code here */
+    override def map[A, B](fa: Option[A])(f: A => B): Option[B] = fa match {
+      case None => None
+      case Some(a) => Some(f(a))
+    }
   }
     /**
       * Imagine a task to get an age of a user that may exist or may not.
