@@ -194,7 +194,21 @@ object Exercise1_Common {
 object Exercise1_Functional extends IOApp {
   import Exercise1_Common._
 
-  def process(console: Console, counter: Int = 0): IO[ExitCode] = ???
+  def process(console: Console, counter: Int = 0): IO[ExitCode] = {
+    import console._
+    for {
+      _ <- putStrLn("What is your favourite animal?")
+      animal <- readStrLn
+      exitCode <- response(animal) match {
+        case Some(x) =>
+          putStrLn(x) *> ExitCode.Success.pure[IO]
+        case None if counter > 1 =>
+          putStrLn("I am disappoint. You have failed to answer too many times.") *> ExitCode.Error.pure[IO]
+        case _ =>
+          putStrLn("Empty input is not valid, try again...") *> process(console, counter + 1)
+      }
+    } yield exitCode
+  }
 
   override def run(args: List[String]): IO[ExitCode] = process(Console.Real)
 }

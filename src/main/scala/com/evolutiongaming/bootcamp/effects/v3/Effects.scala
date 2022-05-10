@@ -217,8 +217,23 @@ object Exercise1_Imperative {
  *  - Tests in `EffectsSpec` to check your work
  */
 object Exercise1_Functional extends IOApp {
+  import Exercise1_Common._
 
-  def process(console: Console, counter: Int = 0): IO[ExitCode] = ???
+  def process(console: Console, counter: Int = 0): IO[ExitCode] = {
+    import console._
+    for {
+      _ <- putString("What is your favourite animal?")
+      animal <- readString
+      exitCode <- response(animal) match {
+        case Some(x) =>
+          putString(x) *> ExitCode.Success.pure[IO]
+        case None if counter > 1 =>
+          putString("I am disappointed. You have failed to answer too many times.") *> ExitCode.Error.pure[IO]
+        case _ =>
+          putString("Empty input is not valid, try again...") *> process(console, counter + 1)
+      }
+    } yield exitCode
+  }
 
   def run(args: List[String]): IO[ExitCode] = process(ConsoleIO)
 }
