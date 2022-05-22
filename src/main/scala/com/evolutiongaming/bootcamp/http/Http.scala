@@ -2,7 +2,7 @@ package com.evolutiongaming.bootcamp.http
 
 import java.time.{Instant, LocalDate}
 
-import cats.data.{EitherT, Validated}
+import cats.data.{EitherT, OptionT, Validated}
 import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.syntax.all._
 import com.evolutiongaming.bootcamp.http.Protocol._
@@ -158,7 +158,14 @@ object HttpServer extends IOApp {
         .leftMap(t => ParseFailure(s"Failed to decode LocalDate", t.getMessage))
         .toValidatedNel
     }
+    implicit val instantDecoder: QueryParamDecoder[Instant] = { param =>
+      Validated
+        .catchNonFatal(Instant.parse(param.value))
+        .leftMap(t => ParseFailure(s"Failed to decode Instant", t.getMessage))
+        .toValidatedNel
+    }
     object LocalDateMatcher extends QueryParamDecoderMatcher[LocalDate](name = "date")
+    object InstantMatcher extends ValidatingQueryParamDecoderMatcher[Instant]("timestamp")
 
     HttpRoutes.of[IO] {
 
@@ -174,6 +181,11 @@ object HttpServer extends IOApp {
       // 200 OK status must be returned with "Timestamp is valid" string in the body. If not valid,
       // 400 Bad Request status must be returned with "Timestamp is invalid" string in the body.
       // curl "localhost:9001/params/validate?timestamp=2020-11-04T14:19:54.736Z"
+      case GET -> Root / "params" / "validate" :? InstantMatcher(timestamp) =>
+        timestamp match {
+          case Validated.Valid(_) => Ok("Timestamp is valid")
+          case Validated.Invalid(_) => BadRequest("Timestamp is invalid")
+        }
     }
   }
 
@@ -193,6 +205,12 @@ object HttpServer extends IOApp {
     // present and contains an integer value, it should add 1 to the value and request the client to update
     // the cookie. Otherwise it should request the client to store "1" in the "counter" cookie.
     // curl -v "localhost:9001/cookies" -b "counter=9"
+    case req @ GET -> Root / "cookies" =>
+      val value = req.cookies
+        .find(_.name == "counter")
+        .flatMap(_.content.toIntOption)
+        .getOrElse(0)
+      Ok().map(_.addCookie("counter", s"${value + 1}"))
   }
 
   // JSON ENTITIES
@@ -259,9 +277,23 @@ object HttpServer extends IOApp {
     // curl -XPOST "localhost:9001/multipart" -F "character=n" -F file=@text.txt
     case req @ POST -> Root / "multipart" =>
       req.as[Multipart[IO]].flatMap { multipart =>
-        ???
+        val count = for {
+          c <- extractBody(multipart, "character").filter(_.length == 1).map(_.charAt(0))
+          f <- extractBody(multipart, "file")
+        } yield f.count(_ == c)
+
+        count.value.flatMap(_ match {
+          case Some(value) => Ok(value.toString)
+          case None => BadRequest()
+        })
       }
   }
+
+  private def extractBody(multipart: Multipart[IO], partName: String): OptionT[IO, String] =
+    multipart.parts
+      .find(_.name.contains(partName))
+      .map(_.as[String])
+      .fold[OptionT[IO, String]](OptionT.none)(OptionT.liftF)
 
   private[http] val httpApp = Seq(
     helloRoutes,
@@ -305,6 +337,7 @@ object HttpClient extends IOApp {
 
         // Exercise 4. Call HTTP endpoint, implemented in scope of Exercise 1, and print the response body.
         // curl "localhost:9001/params/validate?timestamp=2020-11-04T14:19:54.736Z"
+        _ <- client.expect[String]((uri / "params" / "validate").withQueryParam(key = "timestamp", value = "2020-11-04T14:19:54.736Z")) >>= printLine
         _ <- printLine()
 
         _ <- for {
@@ -326,6 +359,13 @@ object HttpClient extends IOApp {
 
         // Exercise 5. Call HTTP endpoint, implemented in scope of Exercise 2, and print the response cookie.
         // curl -v "localhost:9001/cookies" -b "counter=9"
+        _ <- for {
+          request <- Method.GET(uri / "cookies").map(_.addCookie("counter", "9"))
+          response <- client.run(request).use { response =>
+            s"Response cookies are:\n${response.cookies}".stripMargin.pure[IO]
+          }
+          _ <-printLine(response)
+        } yield ()
         _ <- printLine()
 
         _ <- printLine(string = "Executing request with JSON entities:")
