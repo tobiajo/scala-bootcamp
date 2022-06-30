@@ -2,6 +2,8 @@ package com.evolutiongaming.bootcamp.akka.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 
+import scala.collection.mutable.ArrayBuffer
+
 object Exercise1 extends App {
   object Protocol {
     final case class Task(id: Int)
@@ -20,13 +22,15 @@ object Exercise1 extends App {
 
     require(batchSize > 0)
 
-    //    private val buffer: ArrayBuffer[Task] = ArrayBuffer.empty
-    //    or
-    //    private var buffer: Vector[Task] = Vector.empty
+    private val buffer: ArrayBuffer[Task] = ArrayBuffer.empty
 
     override def receive: Receive = {
       case task: Task =>
-        ???
+        buffer += task
+        if (buffer.size == batchSize) {
+          sinkRef ! Tasks(buffer.toVector)
+          buffer.clear()
+        }
     }
   }
 

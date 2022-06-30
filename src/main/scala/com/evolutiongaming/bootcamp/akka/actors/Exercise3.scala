@@ -36,9 +36,37 @@ object Exercise3 extends App {
 
     override def receive: Receive = working
 
-    private def working: Receive = ???
+    private def working: Receive = {
+      case Passivate =>
+        if (entityRefs.isEmpty) context.stop(self)
+        else {
+          entityRefs.values.foreach(_ ! PoisonPill)
+          context.become(passivating)
+        }
+      case Terminated(entity) =>
+        val id = ActorNameSanitizer.desanitize(entity.path.name)
+        entityRefs = entityRefs - id
+      case cmd: Any =>
+        extractEntityId.lift(cmd) match {
+          case Some(id) => entityRefs.getOrElse(id, createEntity(id)).forward(cmd)
+          case None => unhandled(cmd)
+      }
+    }
 
-    private def passivating: Receive = ???
+    private def createEntity(id: String): ActorRef = {
+      val name = ActorNameSanitizer.sanitize(id)
+      val entity = context.actorOf(entityProps, name)
+      context.watch(entity)
+      entityRefs = entityRefs + (id -> entity)
+      entity
+    }
+
+    private def passivating: Receive = {
+      case Terminated(entity) =>
+        val id = ActorNameSanitizer.desanitize(entity.path.name)
+        entityRefs = entityRefs - id
+        if (entityRefs.isEmpty) context.stop(self)
+    }
 
     override def preStart(): Unit = {
       log.info("Router starting!")

@@ -42,7 +42,17 @@ object Exercise2 extends App {
       promise: Promise[Any],
     ) extends Actor {
 
-      override def receive: Receive = ???
+      targetRef ! msg
+      context.setReceiveTimeout(timeout.duration)
+
+      override def receive: Receive = {
+        case res: Any if sender() == targetRef =>
+          promise.success(res)
+          context.stop(self)
+        case _: ReceiveTimeout =>
+          promise.failure(TimeoutException(msg, timeout))
+          context.stop(self)
+      }
     }
   }
 
