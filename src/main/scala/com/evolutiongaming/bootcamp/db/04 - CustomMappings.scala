@@ -41,7 +41,7 @@ object CustomMappings extends IOApp {
     sql"select name, x, y from points".query[Point]
 
   def createTable(): doobie.Update0 =
-    sql"create table points(name VARCHAR PRIMARY KEY, x INT, y INT)".update
+    sql"create table points(name VARCHAR PRIMARY KEY, x INT NOT NULL, y INT NOT NULL)".update
 
   def setup(): ConnectionIO[Unit] = {
     val create = createTable().run
